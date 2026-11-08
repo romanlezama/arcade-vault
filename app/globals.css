@@ -47,8 +47,12 @@
   --bronze: #d97a3a;
   --line: rgba(0, 245, 255, 0.18);
   --line-2: rgba(255, 255, 255, 0.06);
-  --pixel: var(--font-press-start-2p), "Press Start 2P", system-ui, monospace;
-  --mono: var(--font-jetbrains-mono), "JetBrains Mono", var(--font-courier-prime), "Courier Prime", "Courier New", monospace;
+  /* Mismas cadenas que la plantilla. Se usan los nombres de familia que registra next/font
+     en lugar de var(--font-*), porque esas variables añaden "<Familia> Fallback" (Arial
+     reescalada que cubre todo Unicode): los símbolos que la fuente no trae (≡ ▲ ⌕ ♥ …) se
+     dibujarían con esa Arial en vez de caer a la cadena de respaldo de la plantilla. */
+  --pixel: "Press Start 2P", system-ui, monospace;
+  --mono: "JetBrains Mono", "Courier Prime", "Courier New", monospace;
 }
 
 * { box-sizing: border-box; }
@@ -246,6 +250,8 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   gap: 10px;
   padding: 12px 20px;
+  /* Centra el texto multilínea también cuando .btn es un <Link> (la plantilla usa <button>). */
+  text-align: center;
   font-family: var(--pixel);
   font-size: 10px;
   letter-spacing: 0.16em;
