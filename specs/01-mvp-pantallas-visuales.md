@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual: todas las pantallas de Arcade Vault
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** —
 > **Fecha:** 2026-11-07
 > **Objetivo:** Portar a Next.js App Router las cinco pantallas de la plantilla de `references/resources/templates/` (Biblioteca, Detalle, Reproductor, Auth y Salón de la Fama) con navegación, datos mock y persistencia simulada en localStorage, sin implementar ningún juego real.
