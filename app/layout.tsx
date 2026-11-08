@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Courier_Prime, JetBrains_Mono, Press_Start_2P } from "next/font/google";
+import { Footer } from "@/components/footer";
+import { Nav } from "@/components/nav";
 import "./globals.css";
 
 // Mismas fuentes que la plantilla (references/resources/templates/Arcade Vault.html),
-// auto-hospedadas por next/font. Se exponen como variables CSS que usan --pixel y --mono.
+// auto-hospedadas por next/font. --pixel y --mono (globals.css) las referencian por su nombre
+// de familia, no por las variables --font-*, para no heredar el "<Familia> Fallback" de next/font.
 const pressStart2P = Press_Start_2P({
   variable: "--font-press-start-2p",
   weight: "400",
@@ -36,7 +39,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <div className="av-bg" aria-hidden="true" />
         <div className="av-noise" aria-hidden="true" />
-        <div id="root">{children}</div>
+        <div id="root">
+          <Nav />
+          <main className="av-main">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );
