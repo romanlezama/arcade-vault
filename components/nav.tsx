@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOut, useUser } from "@/lib/session";
 
-type Section = "biblioteca" | "salon" | "auth";
+type Section = "inicio" | "biblioteca" | "salon" | "auth";
 
 function sectionOf(pathname: string): Section | null {
-  if (pathname === "/" || pathname.startsWith("/juegos/")) return "biblioteca";
+  if (pathname === "/") return "inicio";
+  if (pathname === "/biblioteca" || pathname.startsWith("/juegos/")) return "biblioteca";
   if (pathname === "/salon") return "salon";
   if (pathname === "/login") return "auth";
   return null;
@@ -32,7 +33,10 @@ export function Nav() {
           </div>
         </Link>
         <div className="links">
-          <Link href="/" className={active("biblioteca")}>
+          <Link href="/" className={active("inicio")}>
+            Inicio
+          </Link>
+          <Link href="/biblioteca" className={active("biblioteca")}>
             Biblioteca
           </Link>
           <Link href="/salon" className={active("salon")}>
@@ -68,7 +72,10 @@ export function Nav() {
         <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
           MENÚ
         </div>
-        <Link href="/" className={active("biblioteca")} onClick={close}>
+        <Link href="/" className={active("inicio")} onClick={close}>
+          Inicio
+        </Link>
+        <Link href="/biblioteca" className={active("biblioteca")} onClick={close}>
           Biblioteca
         </Link>
         <Link href="/salon" className={active("salon")} onClick={close}>

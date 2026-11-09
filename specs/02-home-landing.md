@@ -1,6 +1,6 @@
 # SPEC 02 — Home: landing page de Arcade Vault
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-11-08
 > **Objetivo:** Convertir `/` en la landing page de `references/templates/home-about/` y mover la Biblioteca a `/biblioteca`, actualizando el nav y los enlaces existentes.
