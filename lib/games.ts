@@ -8,7 +8,8 @@ export type CoverClass =
   | "cover-invaders"
   | "cover-rocas"
   | "cover-rana"
-  | "cover-duelo";
+  | "cover-duelo"
+  | "cover-asteroides";
 
 export type Game = {
   /** Slug usado en la URL: "bloque-buster" */
@@ -117,6 +118,17 @@ export const GAMES: Game[] = [
     color: "cyan",
     best: 24,
     plays: "4.2K",
+  },
+  {
+    id: "asteroides",
+    title: "ASTEROIDES",
+    short: "Pulveriza rocas en un vacío sin bordes.",
+    long: "Una nave vectorial flota en un campo de asteroides sin bordes: lo que sale por un lado vuelve por el otro. Cada roca grande se parte en medianas y cada mediana en pequeñas. Atrapa el núcleo 3x para disparar en abanico durante unos segundos.",
+    cat: "SHOOTER",
+    cover: "cover-asteroides",
+    color: "cyan",
+    best: 38750,
+    plays: "1.2K",
   },
 ];
 

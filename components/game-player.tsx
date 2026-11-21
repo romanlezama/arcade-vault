@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AsteroidesCanvas, type AsteroidesHandle } from "@/games/asteroides/canvas";
+import type { AsteroidesSnapshot } from "@/games/asteroides/engine";
 import type { Game } from "@/lib/games";
 import { saveScore, useUser } from "@/lib/session";
 
@@ -9,29 +11,48 @@ type Run = { score: number; level: number };
 
 const INITIAL_RUN: Run = { score: 0, level: 1 };
 
+const INITIAL_ASTEROIDES: AsteroidesSnapshot = {
+  status: "ready",
+  paused: false,
+  score: 0,
+  lives: 3,
+  level: 1,
+};
+
 function normalizeName(value: string) {
   return value.toUpperCase().slice(0, 10);
 }
 
 export function GamePlayer({ game }: { game: Game }) {
   const user = useUser();
+  // ASTEROIDES es el único juego real (SPEC 04); el resto sigue con la partida simulada.
+  const isAsteroides = game.id === "asteroides";
+  const asteroidesRef = useRef<AsteroidesHandle>(null);
+  const [snapshot, setSnapshot] = useState<AsteroidesSnapshot>(INITIAL_ASTEROIDES);
+
   const [run, setRun] = useState<Run>(INITIAL_RUN);
-  const [lives, setLives] = useState(3);
-  const [paused, setPaused] = useState(false);
+  const [simLives, setSimLives] = useState(3);
+  const [simPaused, setSimPaused] = useState(false);
   const [over, setOver] = useState(false);
+  // Puntuación congelada al pulsar FIN: es la que muestra el modal y la que se guarda.
+  const [finalScore, setFinalScore] = useState(0);
   // null = el jugador aún no ha editado el nombre: se usa el del usuario o "INVITADO".
   // Así el nombre se actualiza cuando la sesión aparece tras hidratar.
   const [editedName, setEditedName] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const name = editedName ?? normalizeName(user ? user.name : "INVITADO");
-  const { score, level } = run;
+  // El motor es la fuente de verdad de ASTEROIDES, incluida la pausa.
+  const score = isAsteroides ? snapshot.score : run.score;
+  const level = isAsteroides ? snapshot.level : run.level;
+  const lives = isAsteroides ? snapshot.lives : simLives;
+  const paused = isAsteroides ? snapshot.paused : simPaused;
 
   // Puntuación simulada: sube sola mientras no hay pausa ni fin.
   // Igual que la plantilla, sube de nivel cuando la puntuación cae en los
   // primeros 100 puntos de cada bloque de 2500.
   useEffect(() => {
-    if (over || paused) return;
+    if (isAsteroides || over || paused) return;
     const t = setInterval(() => {
       const delta = Math.floor(10 + Math.random() * 90);
       setRun((r) => {
@@ -40,18 +61,35 @@ export function GamePlayer({ game }: { game: Game }) {
       });
     }, 220);
     return () => clearInterval(t);
-  }, [over, paused]);
+  }, [isAsteroides, over, paused]);
+
+  const togglePause = () => {
+    if (!isAsteroides) {
+      setSimPaused((p) => !p);
+    } else if (paused) {
+      asteroidesRef.current?.resume();
+    } else {
+      asteroidesRef.current?.pause();
+    }
+  };
+
+  const finish = () => {
+    if (isAsteroides) asteroidesRef.current?.pause();
+    setFinalScore(score);
+    setOver(true);
+  };
 
   const restart = () => {
+    if (isAsteroides) asteroidesRef.current?.reset();
     setRun(INITIAL_RUN);
-    setLives(3);
-    setPaused(false);
+    setSimLives(3);
+    setSimPaused(false);
     setOver(false);
     setSaved(false);
   };
 
   const onSave = () => {
-    saveScore({ game: game.id, score, name });
+    saveScore({ game: game.id, score: finalScore, name });
     setSaved(true);
   };
 
@@ -77,10 +115,10 @@ export function GamePlayer({ game }: { game: Game }) {
           </div>
         </div>
         <div className="hud-actions">
-          <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
+          <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
-          <button className="btn magenta" onClick={() => setOver(true)}>
+          <button className="btn magenta" onClick={finish}>
             FIN
           </button>
           <Link href={`/juegos/${game.id}`} className="btn ghost">
@@ -91,13 +129,17 @@ export function GamePlayer({ game }: { game: Game }) {
 
       <div className="crt">
         <div className="crt-screen">
-          <div className="game-arena" aria-hidden="true">
-            <div className="grid-floor"></div>
-            <div className="enemy e1"></div>
-            <div className="enemy e2"></div>
-            <div className="enemy e3"></div>
-            <div className="player-ship"></div>
-          </div>
+          {isAsteroides ? (
+            <AsteroidesCanvas ref={asteroidesRef} onChange={setSnapshot} />
+          ) : (
+            <div className="game-arena" aria-hidden="true">
+              <div className="grid-floor"></div>
+              <div className="enemy e1"></div>
+              <div className="enemy e2"></div>
+              <div className="enemy e3"></div>
+              <div className="player-ship"></div>
+            </div>
+          )}
           {paused && (
             <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
               <div>
@@ -126,7 +168,7 @@ export function GamePlayer({ game }: { game: Game }) {
           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
             <h2 id="game-over-title">FIN DEL JUEGO</h2>
             <div className="final-label">PUNTUACIÓN FINAL</div>
-            <div className="final">{score.toLocaleString("es-ES")}</div>
+            <div className="final">{finalScore.toLocaleString("es-ES")}</div>
             {!saved ? (
               <div className="input-row">
                 <input
