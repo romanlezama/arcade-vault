@@ -1,6 +1,6 @@
 # SPEC 04 — Juego ASTEROIDES: primer juego real del vault
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01, SPEC 02
 > **Fecha:** 2026-11-21
 > **Objetivo:** Añadir la ficha ASTEROIDES y ejecutar en `/juegos/asteroides/jugar` el juego de `references/started-games/02-asteroids/`, portado a TypeScript dentro del CRT, notificando a React la puntuación, las vidas, el nivel y el estado.
@@ -216,6 +216,7 @@ Convenciones:
 - **No:** quitar el HUD del canvas.
 - **Sí:** el modal solo se abre con FIN. GAME OVER se queda en el canvas con Espacio para reiniciar.
 - **No:** abrir el modal automáticamente al morir. El usuario prefirió conservar el GAME OVER original.
+- **Sí:** FIN congela la puntuación: el modal muestra y guarda la puntuación del momento en que se pulsó FIN. `pause()` no tiene efecto en `ready`/`gameover` y el motor sigue escuchando el teclado tras el modal (Espacio podría reiniciar o empezar una partida detrás); JUGAR DE NUEVO llama a `reset()` igualmente. Decidido durante la implementación (opción 1 de 3).
 - **Sí:** estado `ready` con "PULSA ESPACIO PARA EMPEZAR". Evita que la partida arranque antes de que el jugador esté listo.
 - **Sí:** el motor es la única fuente de verdad de la pausa, y React la lee de `snapshot.paused`. Así el botón, `P`, `Escape` y `visibilitychange` no se desincronizan.
 - **Sí:** `onChange` solo cuando cambia el snapshot. Notificar en cada frame provocaría 60 renders por segundo del reproductor.
