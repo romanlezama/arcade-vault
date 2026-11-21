@@ -4,11 +4,8 @@ import { useSyncExternalStore } from "react";
 
 /** Clave "av_user" */
 export type SessionUser = { name: string };
-/** Clave "av_scores" (array) */
-export type SavedScore = { game: string; score: number; name: string; at: number };
 
 const USER_KEY = "av_user";
-const SCORES_KEY = "av_scores";
 
 const listeners = new Set<() => void>();
 
@@ -81,12 +78,4 @@ export function signOut() {
     localStorage.removeItem(USER_KEY);
   } catch {}
   notify();
-}
-
-export function saveScore(entry: Omit<SavedScore, "at">) {
-  try {
-    const all = JSON.parse(localStorage.getItem(SCORES_KEY) || "[]") as SavedScore[];
-    all.push({ ...entry, at: Date.now() });
-    localStorage.setItem(SCORES_KEY, JSON.stringify(all));
-  } catch {}
 }

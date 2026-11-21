@@ -1,6 +1,6 @@
 # SPEC 05 — Leaderboard real en Supabase y tabla de juegos en el Salón
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01, SPEC 03, SPEC 04
 > **Fecha:** 2026-11-21
 > **Objetivo:** Guardar las puntuaciones en una tabla `scores` de Supabase y mostrar en el Salón de la Fama el ranking real por juego más una tabla resumen "TODOS LOS JUEGOS".
@@ -256,6 +256,7 @@ Convenciones:
 - **Sí:** PARTIDAS cuenta las filas guardadas de ese juego, no los jugadores únicos ni las partidas jugadas sin guardar.
 - **Sí:** el Detalle y la Home siguen con datos simulados. Se conectarán en otra spec.
 - **Sí:** `normalizePlayerName` se mueve a `lib/leaderboard.ts`. El modal y el Salón deben normalizar igual.
+- **Sí:** `GamesSummary` recibe además `activeId` (resalta la fila de la pestaña activa) y `loading` (skeleton en las celdas de datos mientras el Salón carga). Decidido durante la implementación.
 
 ## Riesgos
 

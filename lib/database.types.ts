@@ -9,7 +9,21 @@ export type Database = {
   }
   "public": {
           Tables: {
-            [_ in never]: never
+            "scores": {
+                  Row: {
+                    "created_at": string,"game_id": string,"id": number,"player_name": string,"score": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"game_id": string,"id"?: never,"player_name": string,"score": number
+                  }
+                  Update: {
+                    "created_at"?: string,"game_id"?: string,"id"?: never,"player_name"?: string,"score"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never
