@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { AsteroidesCanvas, type AsteroidesHandle } from "@/games/asteroides/canvas";
 import type { AsteroidesSnapshot } from "@/games/asteroides/engine";
 import type { Game } from "@/lib/games";
-import { saveScore, useUser } from "@/lib/session";
+import { normalizePlayerName } from "@/lib/leaderboard";
+import { insertScore } from "@/lib/scores-db";
+import { useUser } from "@/lib/session";
 
 type Run = { score: number; level: number };
 
@@ -18,10 +20,6 @@ const INITIAL_ASTEROIDES: AsteroidesSnapshot = {
   lives: 3,
   level: 1,
 };
-
-function normalizeName(value: string) {
-  return value.toUpperCase().slice(0, 10);
-}
 
 export function GamePlayer({ game }: { game: Game }) {
   const user = useUser();
@@ -39,9 +37,12 @@ export function GamePlayer({ game }: { game: Game }) {
   // null = el jugador aún no ha editado el nombre: se usa el del usuario o "INVITADO".
   // Así el nombre se actualiza cuando la sesión aparece tras hidratar.
   const [editedName, setEditedName] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // Cada partida tiene su propio intento de guardado: si JUGAR DE NUEVO llega antes
+  // de que termine la petición, su resultado se ignora.
+  const saveAttempt = useRef(0);
 
-  const name = editedName ?? normalizeName(user ? user.name : "INVITADO");
+  const name = editedName ?? normalizePlayerName(user ? user.name : "INVITADO");
   // El motor es la fuente de verdad de ASTEROIDES, incluida la pausa.
   const score = isAsteroides ? snapshot.score : run.score;
   const level = isAsteroides ? snapshot.level : run.level;
@@ -85,12 +86,20 @@ export function GamePlayer({ game }: { game: Game }) {
     setSimLives(3);
     setSimPaused(false);
     setOver(false);
-    setSaved(false);
+    saveAttempt.current++;
+    setSaveState("idle");
   };
 
-  const onSave = () => {
-    saveScore({ game: game.id, score: finalScore, name });
-    setSaved(true);
+  const onSave = async () => {
+    if (!name || saveState === "saving" || saveState === "saved") return;
+    const attempt = ++saveAttempt.current;
+    setSaveState("saving");
+    try {
+      await insertScore({ gameId: game.id, playerName: name, score: finalScore });
+      if (attempt === saveAttempt.current) setSaveState("saved");
+    } catch {
+      if (attempt === saveAttempt.current) setSaveState("error");
+    }
   };
 
   return (
@@ -169,18 +178,37 @@ export function GamePlayer({ game }: { game: Game }) {
             <h2 id="game-over-title">FIN DEL JUEGO</h2>
             <div className="final-label">PUNTUACIÓN FINAL</div>
             <div className="final">{finalScore.toLocaleString("es-ES")}</div>
-            {!saved ? (
-              <div className="input-row">
-                <input
-                  value={name}
-                  onChange={(e) => setEditedName(normalizeName(e.target.value))}
-                  placeholder="TUS INICIALES"
-                  aria-label="Tus iniciales"
-                />
-                <button className="btn yellow" onClick={onSave}>
-                  GUARDAR PUNTUACIÓN
-                </button>
-              </div>
+            {saveState !== "saved" ? (
+              <>
+                <div className="input-row">
+                  <input
+                    value={name}
+                    onChange={(e) => setEditedName(normalizePlayerName(e.target.value))}
+                    placeholder="TUS INICIALES"
+                    aria-label="Tus iniciales"
+                    disabled={saveState === "saving"}
+                  />
+                  <button
+                    className={`btn yellow${saveState === "saving" ? " is-busy" : ""}`}
+                    onClick={onSave}
+                    disabled={!name || saveState === "saving"}
+                    aria-busy={saveState === "saving"}
+                  >
+                    {saveState === "saving" ? (
+                      <>
+                        GUARDANDO<span className="caret">_</span>
+                      </>
+                    ) : (
+                      "GUARDAR PUNTUACIÓN"
+                    )}
+                  </button>
+                </div>
+                {saveState === "error" && (
+                  <div className="toast-error" role="alert">
+                    ERROR AL GUARDAR
+                  </div>
+                )}
+              </>
             ) : (
               <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
             )}
