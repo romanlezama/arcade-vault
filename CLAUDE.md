@@ -24,9 +24,13 @@ npm run build   # production build; also type-checks
 npm run start   # serve the production build
 npm run lint    # ESLint 9 flat config (next core-web-vitals + typescript)
 npx tsc --noEmit  # type-check only
+npm run db:push   # apply supabase/migrations to the remote Supabase project (CLI v3, --remote)
+npm run db:types  # regenerate lib/database.types.ts from the remote schema; run after db:push
 ```
 
 No test framework is configured yet.
+
+Supabase: typed clients live in `lib/supabase/` (`client.ts` for the browser, `server.ts` for server code, both `createClient`). Env vars are in `.env.local` (template: `.env.example`); `GET /api/health` checks the connection. No local Docker stack — CLI commands need `--remote`.
 
 ## Stack and non-default configuration
 
@@ -38,4 +42,5 @@ No test framework is configured yet.
 - Import alias: `@/*` maps to the repo root.
 
 ## Skills
+
 Usa siempre /frontend-design para diseñar la interfaz de usuario.
