@@ -1,6 +1,6 @@
 # SPEC 03 — Supabase: cimientos de la integración
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** —
 > **Fecha:** 2026-11-21
 > **Objetivo:** Conectar la app de Next.js con el proyecto Supabase remoto (clientes tipados, variables de entorno, migraciones versionadas y un endpoint `/api/health`) sin cambiar ninguna funcionalidad visible.
@@ -76,8 +76,8 @@ export async function createClient(): Promise<SupabaseClient<Database>>; // serv
 
 ```jsonc
 // package.json → scripts
-"db:types": "supabase gen types typescript --linked --schema public > lib/database.types.ts",
-"db:push": "supabase db push"
+"db:types": "supabase gen types typescript --remote --schema public > lib/database.types.ts",
+"db:push": "supabase db push --remote"
 ```
 
 Respuesta de `GET /api/health`:
@@ -106,11 +106,11 @@ Convenciones:
 2. **CLI y enlace con el remoto.**
    - `npx supabase init` (crea `supabase/config.toml`).
    - Paso del usuario: `npx supabase login` y `npx supabase link --project-ref difzowerixncvfqodpjw`. Pide la contraseña de la base de datos.
-   - Prueba manual: `npx supabase migration list` responde sin error.
+   - Prueba manual: `npx supabase migration list --remote` responde sin error.
 3. **Migración `health`.**
    - `npx supabase migration new health` y escribir la función del modelo de datos.
    - Añadir el script `db:push` y ejecutar `npm run db:push`.
-   - Prueba manual: `npx supabase migration list` muestra la migración en Local y Remote, y `select public.health();` devuelve `ok` en el SQL editor.
+   - Prueba manual: `npx supabase migration list --remote` muestra la migración en Local y Remote, y `select public.health();` devuelve `ok` en el SQL editor.
 4. **Tipos.**
    - Añadir el script `db:types` y ejecutar `npm run db:types`.
    - Prueba manual: `lib/database.types.ts` contiene `health` en `Functions` y `npx tsc --noEmit` pasa.
@@ -131,9 +131,9 @@ Convenciones:
 - [ ] `package.json` incluye `@supabase/supabase-js` y `@supabase/ssr` en `dependencies` y `supabase` en `devDependencies`.
 - [ ] `.env.example` está en git con `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` vacías.
 - [ ] `.env.local` no aparece en `git status` ni en ningún commit.
-- [ ] Ningún archivo del repo contiene una clave `sb_secret_` ni `service_role`.
+- [ ] Ningún archivo del repo contiene el valor de una clave secret (`sb_secret_…`) ni de la clave `service_role`. Las menciones del nombre en documentación o comentarios no cuentan.
 - [ ] `supabase/config.toml` y exactamente una migración `*_health.sql` existen en `supabase/migrations/`.
-- [ ] `npx supabase migration list` muestra la migración `health` aplicada en Local y en Remote.
+- [ ] `npx supabase migration list --remote` muestra la migración `health` aplicada en Local y en Remote.
 - [ ] `lib/database.types.ts` existe, exporta `Database` e incluye la función `health`.
 - [ ] `supabase.rpc("health")` está tipado: `data` es `string | null` sin casts.
 - [ ] `npm run build`, `npm run lint` y `npx tsc --noEmit` terminan sin errores.
@@ -162,19 +162,21 @@ Convenciones:
 - **No:** tabla de prueba. Añadiría una tabla que nadie usa.
 - **No:** ping a `/auth/v1/health`. No tocaría la base de datos ni el cliente tipado.
 - **Sí:** scripts `db:types` y `db:push`. Hacen repetible el flujo "migración → remoto → tipos".
+- **Sí:** comandos de la CLI v3 con `--remote`. En la v3, `db push`, `migration list` y `gen types` apuntan al stack local por defecto, y `--remote` sustituye a `--linked`.
+- **No:** fijar la CLI en la v2 para conservar los comandos sin flag. Supondría quedarse en una versión anterior.
 - **Sí:** clientes en `lib/supabase/` con el nombre `createClient` en ambos, siguiendo la convención de la documentación de `@supabase/ssr`.
 - **Sí:** `lib/session.ts` no se toca. El comportamiento visible queda idéntico hasta la spec de auth.
 
 ## Riesgos
 
-| Riesgo                                                                                | Mitigación                                                                                                                                                                          |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Commitear secretos por error                                                          | `.env*` sigue ignorado y solo se exceptúa `.env.example`. Solo se usa la publishable key, que es pública por diseño. Un criterio de aceptación busca `sb_secret_` y `service_role`. |
-| El cliente de servidor usa `cookies()` y vuelve dinámicas rutas que hoy son estáticas | Solo `/api/health` importa `lib/supabase/server.ts`. Un criterio de aceptación comprueba que las rutas existentes se siguen prerenderizando.                                        |
-| `/api/health` se prerenderiza en el build o queda cacheado                            | Usa `cookies()` (request-time) y, si hace falta, `await connection()`. Responde con `Cache-Control: no-store`.                                                                      |
-| `supabase link` y `db push` piden credenciales interactivas                           | Son pasos del usuario, documentados en el plan y en el README.                                                                                                                      |
-| `lib/database.types.ts` queda desfasado tras una migración                            | El README fija el flujo "migración → `db:push` → `db:types`".                                                                                                                       |
-| `public.health()` es invocable por `anon`                                             | Solo devuelve `'ok'`, no lee datos y usa `security invoker` con `search_path` vacío.                                                                                                |
+| Riesgo                                                                                | Mitigación                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Commitear secretos por error                                                          | `.env*` sigue ignorado y solo se exceptúa `.env.example`. Solo se usa la publishable key, que es pública por diseño. Un criterio de aceptación busca valores de clave secret y `service_role`. |
+| El cliente de servidor usa `cookies()` y vuelve dinámicas rutas que hoy son estáticas | Solo `/api/health` importa `lib/supabase/server.ts`. Un criterio de aceptación comprueba que las rutas existentes se siguen prerenderizando.                                                   |
+| `/api/health` se prerenderiza en el build o queda cacheado                            | Usa `cookies()` (request-time) y, si hace falta, `await connection()`. Responde con `Cache-Control: no-store`.                                                                                 |
+| `supabase link` y `db push` piden credenciales interactivas                           | Son pasos del usuario, documentados en el plan y en el README.                                                                                                                                 |
+| `lib/database.types.ts` queda desfasado tras una migración                            | El README fija el flujo "migración → `db:push` → `db:types`".                                                                                                                                  |
+| `public.health()` es invocable por `anon`                                             | Solo devuelve `'ok'`, no lee datos y usa `security invoker` con `search_path` vacío.                                                                                                           |
 
 ## Lo que **no** entra en esta spec
 
