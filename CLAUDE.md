@@ -85,3 +85,21 @@ No test framework is configured yet. Verify UI changes in the browser (Playwrigh
 - Usa siempre `/frontend-design` para diseñar la interfaz de usuario.
 - `/spec <descripción>` escribe una spec nueva en `specs/`; `/spec-impl <NN-nombre>` implementa una spec aprobada paso a paso.
 - Para añadir un juego real (desde `references/started-games/` o un diseño propio) usa `/add-game <carpeta>`: genera una spec `specs/NN-juego-<id>.md` con motor, canvas, ficha en `GAMES`, portada, entrada en `GAME_REGISTRY`, migración del CHECK y leaderboard, siguiendo SPEC 04–07. Sus archivos de apoyo (`contrato-motor.md`, `checklist-integracion.md`, `plantilla-spec-juego.md`) están en `.claude/skills/add-game/`. Después se implementa con `/spec-impl`.
+
+## Agentes
+
+- **`game-planner`** (`.claude/agents/game-planner.md`): planifica y decide qué juego encaja como siguiente juego real de la plataforma. Úsalo antes de `/add-game` cuando haya que elegir o priorizar un juego nuevo.
+  - Lee el catálogo (`lib/games.ts`), `games/registry.ts`, `references/implemented-games.md`, `references/started-games/`, los assets, el contrato de `/add-game` y `specs/`.
+  - Propone 1–3 candidatos originales (mecánica, controles, puntuación, fuente, esfuerzo S/M/L) y una recomendación final con el siguiente paso: `/add-game` → `/spec-impl`.
+  - Registra cada sugerencia en `references/game-suggestions-todo.md` (Pendientes / En curso / Implementados / Descartados), una entrada por id, sin duplicar.
+  - Mantiene memoria persistente local (`memory: local`) en `.claude/agent-memory-local/game-planner/`, ignorada por git, para no repetir ideas ni volver a proponer las descartadas.
+  - Solo escribe en el ToDo y en su memoria; no modifica código, specs ni migraciones.
+- **`game-jam`** (`.claude/agents/game-jam.md`): recibe un tema y diseña un juego original para la plataforma.
+  - Genera `specs/game-jam/<game-id>/00-concepto.md` (pitch, bucle, controles, boceto, estética, preguntas abiertas) y `01-juego-<game-id>.md` (spec completa con el formato de SPEC 06/07), ambos en Borrador.
+  - Decide de forma autónoma y deja las dudas en "Preguntas abiertas" del concepto.
+  - Solo escribe en `specs/game-jam/<game-id>/`. Tras revisarla, la spec se mueve a `specs/NN-juego-<id>.md`, se aprueba y se implementa con `/spec-impl`.
+- **`skin-designer`** (`.claude/agents/skin-designer.md`): da a un juego real sus skins mínimas `clasico` (default), `neon` y `retro`, legibles sobre fondo oscuro.
+  - Trabaja sobre **un solo juego por invocación**, el que indique el usuario (`@skin-designer <id>`); sin id válido no escribe nada y lista los juegos con su estado.
+  - Audita la paleta del motor, valida contraste WCAG (texto ≥ 4,5:1, elementos de juego ≥ 3:1) y escribe `specs/NN-skins-<id>.md` en Borrador; la primera spec define el contrato de skins (`games/skins.ts`, `setSkin`, selector en `GamePlayer`, `av_skin`).
+  - Registra el estado de cada juego en `references/game-with-themes.md` (una fila por juego, sin duplicar).
+  - Memoria local en `.claude/agent-memory-local/skin-designer/`. Solo escribe en su spec, el registro y su memoria; no modifica código. Después se implementa con `/spec-impl`.
