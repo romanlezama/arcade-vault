@@ -2,6 +2,7 @@
 // partida simulada en GamePlayer.
 import { ApilaCanvas } from "./apila/canvas";
 import { AsteroidesCanvas } from "./asteroides/canvas";
+import { ViboraCanvas } from "./vibora/canvas";
 import type { GameCanvasProps, GameSnapshot } from "./types";
 
 export type GameEntry = {
@@ -27,6 +28,16 @@ export const GAME_REGISTRY: Partial<Record<string, GameEntry>> = {
       paused: false,
       score: 0,
       lives: 0,
+      level: 1,
+    },
+  },
+  vibora: {
+    Canvas: ViboraCanvas,
+    initialSnapshot: {
+      status: "ready",
+      paused: false,
+      score: 0,
+      lives: 3,
       level: 1,
     },
   },
