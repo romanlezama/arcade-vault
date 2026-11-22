@@ -44,3 +44,5 @@ Supabase: typed clients live in `lib/supabase/` (`client.ts` for the browser, `s
 ## Skills
 
 Usa siempre /frontend-design para diseñar la interfaz de usuario.
+
+Para añadir un juego real (desde `references/started-games/` o un diseño propio) usa `/add-game <carpeta>`: genera una spec `specs/NN-juego-<id>.md` con motor, canvas, ficha, portada y leaderboard siguiendo SPEC 04 y SPEC 05. Después se implementa con `/spec-impl`.
