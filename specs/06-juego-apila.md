@@ -1,6 +1,6 @@
 # SPEC 06 — Juego APILA: segundo juego real y registro de motores
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 04, SPEC 05
 > **Fecha:** 2026-11-21
 > **Objetivo:** Añadir la ficha APILA y ejecutar en `/juegos/apila/jugar` el juego de `references/started-games/03-tetris/`, portado a TypeScript dentro del CRT mediante un registro de motores, notificando a React la puntuación, el nivel y el estado, y guardando en el leaderboard real.

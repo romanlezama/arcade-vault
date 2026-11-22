@@ -9,7 +9,8 @@ export type CoverClass =
   | "cover-rocas"
   | "cover-rana"
   | "cover-duelo"
-  | "cover-asteroides";
+  | "cover-asteroides"
+  | "cover-apila";
 
 export type Game = {
   /** Slug usado en la URL: "bloque-buster" */
@@ -129,6 +130,17 @@ export const GAMES: Game[] = [
     color: "cyan",
     best: 38750,
     plays: "1.2K",
+  },
+  {
+    id: "apila",
+    title: "APILA",
+    short: "Encaja ocho piezas, incluida la tuerca imposible.",
+    long: "Las piezas caen sobre un pozo de diez columnas: muévelas, gíralas y suéltalas de golpe para completar líneas. Entre las clásicas se cuela la tuerca, un anillo hueco que pondrá a prueba tu orden. Cada 10 líneas la caída se acelera.",
+    cat: "PUZZLE",
+    cover: "cover-apila",
+    color: "yellow",
+    best: 96300,
+    plays: "0.8K",
   },
 ];
 

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AsteroidesCanvas, type AsteroidesHandle } from "@/games/asteroides/canvas";
-import type { AsteroidesSnapshot } from "@/games/asteroides/engine";
+import { GAME_REGISTRY } from "@/games/registry";
+import type { GameHandle, GameSnapshot } from "@/games/types";
 import type { Game } from "@/lib/games";
 import { normalizePlayerName } from "@/lib/leaderboard";
 import { insertScore } from "@/lib/scores-db";
@@ -13,20 +13,23 @@ type Run = { score: number; level: number };
 
 const INITIAL_RUN: Run = { score: 0, level: 1 };
 
-const INITIAL_ASTEROIDES: AsteroidesSnapshot = {
+// Solo da tipo al estado en los juegos simulados; no se muestra nunca.
+const NO_SNAPSHOT: GameSnapshot = {
   status: "ready",
   paused: false,
   score: 0,
-  lives: 3,
+  lives: 0,
   level: 1,
 };
 
 export function GamePlayer({ game }: { game: Game }) {
   const user = useUser();
-  // ASTEROIDES es el único juego real (SPEC 04); el resto sigue con la partida simulada.
-  const isAsteroides = game.id === "asteroides";
-  const asteroidesRef = useRef<AsteroidesHandle>(null);
-  const [snapshot, setSnapshot] = useState<AsteroidesSnapshot>(INITIAL_ASTEROIDES);
+  // Los juegos con motor real están en el registro (SPEC 06); el resto sigue
+  // con la partida simulada.
+  const entry = GAME_REGISTRY[game.id];
+  const isReal = Boolean(entry);
+  const handleRef = useRef<GameHandle>(null);
+  const [snapshot, setSnapshot] = useState<GameSnapshot>(entry?.initialSnapshot ?? NO_SNAPSHOT);
 
   const [run, setRun] = useState<Run>(INITIAL_RUN);
   const [simLives, setSimLives] = useState(3);
@@ -43,17 +46,17 @@ export function GamePlayer({ game }: { game: Game }) {
   const saveAttempt = useRef(0);
 
   const name = editedName ?? normalizePlayerName(user ? user.name : "INVITADO");
-  // El motor es la fuente de verdad de ASTEROIDES, incluida la pausa.
-  const score = isAsteroides ? snapshot.score : run.score;
-  const level = isAsteroides ? snapshot.level : run.level;
-  const lives = isAsteroides ? snapshot.lives : simLives;
-  const paused = isAsteroides ? snapshot.paused : simPaused;
+  // En los juegos reales el motor es la fuente de verdad, incluida la pausa.
+  const score = isReal ? snapshot.score : run.score;
+  const level = isReal ? snapshot.level : run.level;
+  const lives = isReal ? snapshot.lives : simLives;
+  const paused = isReal ? snapshot.paused : simPaused;
 
   // Puntuación simulada: sube sola mientras no hay pausa ni fin.
   // Igual que la plantilla, sube de nivel cuando la puntuación cae en los
   // primeros 100 puntos de cada bloque de 2500.
   useEffect(() => {
-    if (isAsteroides || over || paused) return;
+    if (isReal || over || paused) return;
     const t = setInterval(() => {
       const delta = Math.floor(10 + Math.random() * 90);
       setRun((r) => {
@@ -62,26 +65,26 @@ export function GamePlayer({ game }: { game: Game }) {
       });
     }, 220);
     return () => clearInterval(t);
-  }, [isAsteroides, over, paused]);
+  }, [isReal, over, paused]);
 
   const togglePause = () => {
-    if (!isAsteroides) {
+    if (!isReal) {
       setSimPaused((p) => !p);
     } else if (paused) {
-      asteroidesRef.current?.resume();
+      handleRef.current?.resume();
     } else {
-      asteroidesRef.current?.pause();
+      handleRef.current?.pause();
     }
   };
 
   const finish = () => {
-    if (isAsteroides) asteroidesRef.current?.pause();
+    if (isReal) handleRef.current?.pause();
     setFinalScore(score);
     setOver(true);
   };
 
   const restart = () => {
-    if (isAsteroides) asteroidesRef.current?.reset();
+    if (isReal) handleRef.current?.reset();
     setRun(INITIAL_RUN);
     setSimLives(3);
     setSimPaused(false);
@@ -138,8 +141,8 @@ export function GamePlayer({ game }: { game: Game }) {
 
       <div className="crt">
         <div className="crt-screen">
-          {isAsteroides ? (
-            <AsteroidesCanvas ref={asteroidesRef} onChange={setSnapshot} />
+          {entry ? (
+            <entry.Canvas ref={handleRef} onChange={setSnapshot} />
           ) : (
             <div className="game-arena" aria-hidden="true">
               <div className="grid-floor"></div>

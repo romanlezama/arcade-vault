@@ -38,7 +38,7 @@ export const FEATURES: Feature[] = [
 ];
 
 export const HOME_STATS: HomeStat[] = [
-  { n: "9", u: "JUEGOS", s: "Y CONTANDO" },
+  { n: "10", u: "JUEGOS", s: "Y CONTANDO" },
   { n: "MILES", u: "DE PARTIDAS", s: "JUGADAS CADA DÍA" },
   { n: "GLOBAL", u: "RANKING", s: "COMPITE CON EL MUNDO" },
 ];
