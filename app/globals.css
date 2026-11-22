@@ -692,7 +692,46 @@ a { color: inherit; text-decoration: none; }
 .hud-stat .v { font-family: var(--pixel); font-size: 16px; color: var(--cyan); text-shadow: 0 0 6px rgba(0,245,255,0.5); }
 .hud-stat.lives .v { color: var(--magenta); text-shadow: 0 0 6px rgba(255,0,110,0.5); }
 .hud-stat.level .v { color: var(--yellow); text-shadow: 0 0 6px rgba(245,255,0,0.5); }
-.hud-actions { display: flex; gap: 10px; }
+.hud-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* Selector de skin (SPEC 08): conmutador de modo de la máquina, acento verde
+   (libre en el HUD) y LED como el "SEÑAL OK" del CRT en la skin activa. */
+.skin-picker {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.skin-picker button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 12px;
+  font-family: var(--pixel);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 160ms, background-color 160ms;
+}
+.skin-picker button + button { border-left: 1px solid var(--line); }
+.skin-picker button::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-faint);
+  transition: background-color 160ms, box-shadow 160ms;
+}
+.skin-picker button:hover { color: var(--ink); }
+.skin-picker button[aria-pressed="true"] {
+  color: var(--green);
+  background: rgba(0, 255, 136, 0.08);
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
+}
+.skin-picker button[aria-pressed="true"]::before {
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+}
+.skin-picker button:focus-visible { outline: 1px solid var(--green); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) {
+  .skin-picker button, .skin-picker button::before { transition: none; }
+}
 
 .crt {
   position: relative;

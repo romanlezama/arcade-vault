@@ -19,6 +19,7 @@ Development follows **Spec Driven Design** with the `/spec` (write a spec) and `
 | 05   | Real leaderboard on Supabase (`scores` table, hall of fame) |
 | 06   | APILA (falling-block puzzle) + engine registry              |
 | 07   | VÍBORA (snake)                                              |
+| 08   | ASTEROIDES skins (clásico/neón/retro) + skin contract       |
 
 When adding a feature, write or update a spec first and implement from it. The README and specs are in Spanish.
 
