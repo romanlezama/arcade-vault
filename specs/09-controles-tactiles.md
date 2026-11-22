@@ -5,6 +5,8 @@
 > **Fecha:** 2026-11-22
 > **Objetivo:** Que ASTEROIDES, APILA y VÍBORA se puedan jugar en un móvil táctil, en vertical y en horizontal, con un mando virtual por juego bajo o junto al CRT que emite los mismos eventos de teclado que ya entienden los motores.
 
+> **Nota (SPEC 10):** el aspecto y la disposición del mando de esta spec los sustituye la [SPEC 10](10-gamepad-neon.md) (panel "Gamepad MK-II"). Ya no aplican: la disposición en fila por juego, las etiquetas de texto (PROPULSAR, DISPARAR, GIRAR, CAÍDA), los colores amarillo/magenta de los botones de acción ni el criterio de botones de al menos 56×56 px. La mecánica (teclas virtuales, modos, multitoque, liberación de teclas, toque en el CRT y visibilidad) sigue vigente.
+
 ## Por qué existe esta spec
 
 Los tres motores reales solo escuchan `keydown`/`keyup` en `window` y leen `e.code`. En un móvil no hay teclado: la partida no se puede ni empezar, porque arrancar exige pulsar Espacio. El canvas sí se escala bien (800×600 con `width: 100%` dentro de `.crt-screen`, 4:3).

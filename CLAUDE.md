@@ -21,6 +21,7 @@ Development follows **Spec Driven Design** with the `/spec` (write a spec) and `
 | 07   | VÍBORA (snake)                                              |
 | 08   | ASTEROIDES skins (clásico/neón/retro) + skin contract       |
 | 09   | Touch controls: virtual gamepad + mobile player layout      |
+| 10   | Neon "Gamepad MK-II" look for the touch controls            |
 
 When adding a feature, write or update a spec first and implement from it. The README and specs are in Spanish.
 

@@ -1,6 +1,7 @@
 "use client";
-// Mando táctil (SPEC 09): pinta un grupo (direcciones o acciones) de un
-// TouchLayout y traduce los toques a teclas virtuales (lib/virtual-keys.ts).
+// Mando táctil (SPEC 09, contrato de SPEC 10): cruceta de 4 posiciones y
+// botones A/B de un TouchLayout; traduce los toques a teclas virtuales
+// (lib/virtual-keys.ts). Un botón sin TouchButton se pinta apagado.
 import { useEffect, useRef, useState } from "react";
 import type { TouchButton, TouchLayout } from "@/games/types";
 import { pressKey, releaseKey, tapKey } from "@/lib/virtual-keys";
@@ -8,12 +9,46 @@ const REPEAT_DELAY_MS = 170;
 const REPEAT_INTERVAL_MS = 50;
 function TouchKey({
   button,
-  variant,
+  className,
+  pos,
+  children,
+}: {
+  button?: TouchButton;
+  className: string;
+  pos: string; // posición fija en el mando: "up", "left"… "a", "b"
+  children: React.ReactNode;
+}) {
+  if (!button)
+    return (
+      <button
+        type="button"
+        tabIndex={-1}
+        className={className}
+        data-pos={pos}
+        disabled
+        aria-label="Sin uso"
+      >
+        {children}
+      </button>
+    );
+  return (
+    <ActiveKey button={button} className={className} pos={pos}>
+      {children}
+    </ActiveKey>
+  );
+}
+function ActiveKey({
+  button,
+  className,
+  pos,
+  children,
 }: {
   button: TouchButton;
-  variant: "direction" | "action";
+  className: string;
+  pos: string;
+  children: React.ReactNode;
 }) {
-  const { code, mode, label, ariaLabel } = button;
+  const { code, mode, ariaLabel } = button;
   const [pressed, setPressed] = useState(false);
   // Dedo que tiene apoyado este botón (null = libre). Cada botón sigue el suyo:
   // así varios dedos pulsan botones distintos a la vez.
@@ -91,8 +126,8 @@ function TouchKey({
     <button
       type="button"
       tabIndex={-1}
-      className={`touch-btn touch-btn--${variant}`}
-      data-code={code}
+      className={className}
+      data-pos={pos}
       data-pressed={pressed || undefined}
       aria-label={ariaLabel}
       onPointerDown={onPointerDown}
@@ -102,42 +137,65 @@ function TouchKey({
       onPointerMove={onPointerMove}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {variant === "action" ? (
-        <>
-          <span className="touch-btn__cap" aria-hidden="true" />
-          <span className="touch-btn__label" aria-hidden="true">
-            {label}
-          </span>
-        </>
-      ) : (
-        <span aria-hidden="true">{label}</span>
-      )}
+      {children}
     </button>
   );
 }
-export function TouchControls({
-  layout,
-  slot,
-}: {
-  layout: TouchLayout;
-  slot: "directions" | "actions";
-}) {
-  const buttons = slot === "directions" ? layout.directions : layout.actions;
-  if (buttons.length === 0) return null;
-  const cross = slot === "directions" && layout.arrangement === "cross";
+// Panel "Gamepad MK-II" (SPEC 10, referencia en references/gamepad-assets/):
+// cruceta de 4 teclas con núcleo luminoso y botones B (cian) y A (magenta).
+// Flechas en SVG, como la referencia, para no depender de la fuente.
+const ARROWS = {
+  up: "M12 4 L20 16 L4 16 Z",
+  right: "M8 4 L20 12 L8 20 Z",
+  down: "M4 8 L20 8 L12 20 Z",
+  left: "M16 4 L16 20 L4 12 Z",
+} as const;
+const DPAD = ["up", "right", "down", "left"] as const;
+export function TouchControls({ layout }: { layout: TouchLayout }) {
   return (
-    <div
-      className={`touch-pad touch-pad--${slot}${cross ? " touch-pad--cross" : ""}`}
-      role="group"
-      aria-label={slot === "directions" ? "Direcciones" : "Acciones"}
-    >
-      {buttons.map((b) => (
-        <TouchKey
-          key={b.code}
-          button={b}
-          variant={slot === "directions" ? "direction" : "action"}
-        />
-      ))}
+    <div className="gp" role="group" aria-label="Mando">
+      <div className="gp-body">
+        <div className="gp-zone gp-zone--dpad">
+          <div className="gp-dpad" role="group" aria-label="Cruceta">
+            {DPAD.map((pos) => (
+              <TouchKey
+                key={pos}
+                button={layout.dpad[pos]}
+                className={`dp dp-${pos}`}
+                pos={pos}
+              >
+                <svg
+                  className="dp-arrow"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d={ARROWS[pos]} fill="currentColor" />
+                </svg>
+              </TouchKey>
+            ))}
+            <div className="dp-hub" aria-hidden="true">
+              <span className="dp-hub-gem" />
+            </div>
+          </div>
+        </div>
+        <div className="gp-zone gp-zone--ab">
+          <div className="gp-actions" role="group" aria-label="Botones A y B">
+            {(["b", "a"] as const).map((pos) => (
+              <TouchKey
+                key={pos}
+                button={layout[pos]}
+                className={`ab ${pos}`}
+                pos={pos}
+              >
+                <span className="ab-ring" aria-hidden="true" />
+                <span className="ab-letter" aria-hidden="true">
+                  {pos.toUpperCase()}
+                </span>
+              </TouchKey>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

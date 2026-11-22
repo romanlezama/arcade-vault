@@ -22,16 +22,36 @@ function dispatch(type: "keydown" | "keyup", code: string, repeat: boolean) {
     }),
   );
 }
-/** keydown; `repeat: true` para las repeticiones al mantener pulsado. */
+// Pulsaciones mantenidas por code (SPEC 10): dos botones pueden mantener la
+// misma tecla (▲ y B propulsan en ASTEROIDES). Solo el primero envía keydown
+// y solo el último en soltarse envía keyup.
+const held = new Map<string, number>();
+/**
+ * keydown al empezar a mantener (cuenta la pulsación).
+ * `repeat: true` = repetición mientras se mantiene: se despacha siempre y no cuenta.
+ */
 export function pressKey(code: string, repeat = false) {
-  dispatch("keydown", code, repeat);
+  if (repeat) {
+    dispatch("keydown", code, true);
+    return;
+  }
+  const n = held.get(code) ?? 0;
+  held.set(code, n + 1);
+  if (n === 0) dispatch("keydown", code, false);
 }
-/** keyup. */
+/** Deja de mantener; keyup solo cuando se suelta la última pulsación. */
 export function releaseKey(code: string) {
-  dispatch("keyup", code, false);
+  const n = held.get(code) ?? 0;
+  if (n === 0) return; // nunca baja de 0
+  if (n === 1) {
+    held.delete(code);
+    dispatch("keyup", code, false);
+  } else {
+    held.set(code, n - 1);
+  }
 }
-/** Pulsación completa: keydown y keyup seguidos. */
+/** Pulsación completa: keydown y keyup seguidos, sin contador. */
 export function tapKey(code: string) {
-  pressKey(code);
-  releaseKey(code);
+  dispatch("keydown", code, false);
+  dispatch("keyup", code, false);
 }
