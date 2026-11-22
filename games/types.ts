@@ -24,16 +24,20 @@ export type GameCanvasProps = {
 // tap: keydown + keyup al apoyar.
 // repeat: keydown al apoyar, repeticiones mientras se mantiene, keyup al levantar.
 export type TouchButtonMode = "hold" | "tap" | "repeat";
+// Contrato del mando (SPEC 10): cruceta de 4 posiciones + botones A y B.
+// Un botón que falta se pinta apagado (disabled) y no envía nada.
 export type TouchButton = {
   code: string; // KeyboardEvent.code a emitir: "ArrowLeft", "Space"…
-  label: string; // texto visible: "◀", "DISPARAR"…
   ariaLabel: string; // "Girar a la izquierda", "Disparar"…
   mode: TouchButtonMode;
 };
 export type TouchLayout = {
-  // row: direcciones en fila, en el orden del array.
-  // cross: cruceta colocada por code (ArrowUp arriba, ArrowLeft izquierda…).
-  arrangement: "row" | "cross";
-  directions: readonly TouchButton[];
-  actions: readonly TouchButton[]; // puede estar vacío (VÍBORA)
+  dpad: {
+    up?: TouchButton;
+    down?: TouchButton;
+    left?: TouchButton;
+    right?: TouchButton;
+  };
+  a?: TouchButton; // acción principal (Espacio)
+  b?: TouchButton; // acción secundaria
 };

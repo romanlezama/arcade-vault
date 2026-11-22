@@ -175,9 +175,6 @@ export function GamePlayer({ game }: { game: Game }) {
         </div>
       </div>
       <div className={`play-stage${entry?.touch ? " has-touch" : ""}`}>
-        {entry?.touch && (
-          <TouchControls layout={entry.touch} slot="directions" />
-        )}
         <div className="crt">
           <div className="crt-screen" onPointerDown={onScreenPointerDown}>
             {entry ? (
@@ -225,7 +222,7 @@ export function GamePlayer({ game }: { game: Game }) {
             <span>CARGA · 1MB</span>
           </div>
         </div>
-        {entry?.touch && <TouchControls layout={entry.touch} slot="actions" />}
+        {entry?.touch && <TouchControls layout={entry.touch} />}
       </div>
       {over && (
         <div className="modal-bd">
