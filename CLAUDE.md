@@ -93,3 +93,7 @@ No test framework is configured yet. Verify UI changes in the browser (Playwrigh
   - Registra cada sugerencia en `references/game-suggestions-todo.md` (Pendientes / En curso / Implementados / Descartados), una entrada por id, sin duplicar.
   - Mantiene memoria persistente local (`memory: local`) en `.claude/agent-memory-local/game-planner/`, ignorada por git, para no repetir ideas ni volver a proponer las descartadas.
   - Solo escribe en el ToDo y en su memoria; no modifica código, specs ni migraciones.
+- **`game-jam`** (`.claude/agents/game-jam.md`): recibe un tema y diseña un juego original para la plataforma.
+  - Genera `specs/game-jam/<game-id>/00-concepto.md` (pitch, bucle, controles, boceto, estética, preguntas abiertas) y `01-juego-<game-id>.md` (spec completa con el formato de SPEC 06/07), ambos en Borrador.
+  - Decide de forma autónoma y deja las dudas en "Preguntas abiertas" del concepto.
+  - Solo escribe en `specs/game-jam/<game-id>/`. Tras revisarla, la spec se mueve a `specs/NN-juego-<id>.md`, se aprueba y se implementa con `/spec-impl`.
