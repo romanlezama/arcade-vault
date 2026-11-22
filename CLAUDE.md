@@ -84,3 +84,12 @@ No test framework is configured yet. Verify UI changes in the browser (Playwrigh
 - Usa siempre `/frontend-design` para diseñar la interfaz de usuario.
 - `/spec <descripción>` escribe una spec nueva en `specs/`; `/spec-impl <NN-nombre>` implementa una spec aprobada paso a paso.
 - Para añadir un juego real (desde `references/started-games/` o un diseño propio) usa `/add-game <carpeta>`: genera una spec `specs/NN-juego-<id>.md` con motor, canvas, ficha en `GAMES`, portada, entrada en `GAME_REGISTRY`, migración del CHECK y leaderboard, siguiendo SPEC 04–07. Sus archivos de apoyo (`contrato-motor.md`, `checklist-integracion.md`, `plantilla-spec-juego.md`) están en `.claude/skills/add-game/`. Después se implementa con `/spec-impl`.
+
+## Agentes
+
+- **`game-planner`** (`.claude/agents/game-planner.md`): planifica y decide qué juego encaja como siguiente juego real de la plataforma. Úsalo antes de `/add-game` cuando haya que elegir o priorizar un juego nuevo.
+  - Lee el catálogo (`lib/games.ts`), `games/registry.ts`, `references/implemented-games.md`, `references/started-games/`, los assets, el contrato de `/add-game` y `specs/`.
+  - Propone 1–3 candidatos originales (mecánica, controles, puntuación, fuente, esfuerzo S/M/L) y una recomendación final con el siguiente paso: `/add-game` → `/spec-impl`.
+  - Registra cada sugerencia en `references/game-suggestions-todo.md` (Pendientes / En curso / Implementados / Descartados), una entrada por id, sin duplicar.
+  - Mantiene memoria persistente local (`memory: local`) en `.claude/agent-memory-local/game-planner/`, ignorada por git, para no repetir ideas ni volver a proponer las descartadas.
+  - Solo escribe en el ToDo y en su memoria; no modifica código, specs ni migraciones.
