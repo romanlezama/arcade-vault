@@ -19,3 +19,21 @@ export type GameCanvasProps = {
   onChange: (snapshot: GameSnapshot) => void;
   skin?: SkinId; // los juegos sin skins lo ignoran (SPEC 08)
 };
+// ── Mando táctil (SPEC 09) ───────────────────────────────────────────────────
+// hold: keydown al apoyar, keyup al levantar.
+// tap: keydown + keyup al apoyar.
+// repeat: keydown al apoyar, repeticiones mientras se mantiene, keyup al levantar.
+export type TouchButtonMode = "hold" | "tap" | "repeat";
+export type TouchButton = {
+  code: string; // KeyboardEvent.code a emitir: "ArrowLeft", "Space"…
+  label: string; // texto visible: "◀", "DISPARAR"…
+  ariaLabel: string; // "Girar a la izquierda", "Disparar"…
+  mode: TouchButtonMode;
+};
+export type TouchLayout = {
+  // row: direcciones en fila, en el orden del array.
+  // cross: cruceta colocada por code (ArrowUp arriba, ArrowLeft izquierda…).
+  arrangement: "row" | "cross";
+  directions: readonly TouchButton[];
+  actions: readonly TouchButton[]; // puede estar vacío (VÍBORA)
+};

@@ -20,6 +20,7 @@ Development follows **Spec Driven Design** with the `/spec` (write a spec) and `
 | 06   | APILA (falling-block puzzle) + engine registry              |
 | 07   | VÍBORA (snake)                                              |
 | 08   | ASTEROIDES skins (clásico/neón/retro) + skin contract       |
+| 09   | Touch controls: virtual gamepad + mobile player layout      |
 
 When adding a feature, write or update a spec first and implement from it. The README and specs are in Spanish.
 

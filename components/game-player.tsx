@@ -9,6 +9,10 @@ import { normalizePlayerName } from "@/lib/leaderboard";
 import { insertScore } from "@/lib/scores-db";
 import { useUser } from "@/lib/session";
 import { setSkinPreference, useSkin } from "@/lib/skin";
+import { tapKey } from "@/lib/virtual-keys";
+import { TouchControls } from "./touch-controls";
+// Estados en los que tocar el CRT arranca o reinicia la partida (SPEC 09).
+const TAP_TO_START = new Set(["ready", "gameover", "won"]);
 type Run = { score: number; level: number };
 const INITIAL_RUN: Run = { score: 0, level: 1 };
 // Solo da tipo al estado en los juegos simulados; no se muestra nunca.
@@ -69,6 +73,12 @@ export function GamePlayer({ game }: { game: Game }) {
     }, 220);
     return () => clearInterval(t);
   }, [isReal, over, paused]);
+  // Toque en el CRT (SPEC 09): arranca o reinicia la partida en táctil, solo
+  // en ready/gameover/won. Durante la partida no hace nada; el ratón se ignora.
+  const onScreenPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!entry?.touch || e.pointerType === "mouse") return;
+    if (TAP_TO_START.has(snapshot.status)) tapKey("Space");
+  };
   const togglePause = () => {
     if (!isReal) {
       setSimPaused((p) => !p);
@@ -164,48 +174,58 @@ export function GamePlayer({ game }: { game: Game }) {
           </Link>
         </div>
       </div>
-      <div className="crt">
-        <div className="crt-screen">
-          {entry ? (
-            <entry.Canvas ref={handleRef} onChange={setSnapshot} skin={skin} />
-          ) : (
-            <div className="game-arena" aria-hidden="true">
-              <div className="grid-floor"></div>
-              <div className="enemy e1"></div>
-              <div className="enemy e2"></div>
-              <div className="enemy e3"></div>
-              <div className="player-ship"></div>
-            </div>
-          )}
-          {paused && (
-            <div
-              className="crt-content"
-              style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}
-            >
-              <div>
-                <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
-                  EN PAUSA
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--ink-dim)",
-                    marginTop: 10,
-                    letterSpacing: "0.16em",
-                  }}
-                >
-                  PULSA REANUDAR PARA CONTINUAR
+      <div className={`play-stage${entry?.touch ? " has-touch" : ""}`}>
+        {entry?.touch && (
+          <TouchControls layout={entry.touch} slot="directions" />
+        )}
+        <div className="crt">
+          <div className="crt-screen" onPointerDown={onScreenPointerDown}>
+            {entry ? (
+              <entry.Canvas
+                ref={handleRef}
+                onChange={setSnapshot}
+                skin={skin}
+              />
+            ) : (
+              <div className="game-arena" aria-hidden="true">
+                <div className="grid-floor"></div>
+                <div className="enemy e1"></div>
+                <div className="enemy e2"></div>
+                <div className="enemy e3"></div>
+                <div className="player-ship"></div>
+              </div>
+            )}
+            {paused && (
+              <div
+                className="crt-content"
+                style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}
+              >
+                <div>
+                  <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
+                    EN PAUSA
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 11,
+                      color: "var(--ink-dim)",
+                      marginTop: 10,
+                      letterSpacing: "0.16em",
+                    }}
+                  >
+                    PULSA REANUDAR PARA CONTINUAR
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="crt-bottom">
+            <span className="led">SEÑAL OK</span>
+            <span>{game.title} · CRT-83 · 60 HZ</span>
+            <span>CARGA · 1MB</span>
+          </div>
         </div>
-        <div className="crt-bottom">
-          <span className="led">SEÑAL OK</span>
-          <span>{game.title} · CRT-83 · 60 HZ</span>
-          <span>CARGA · 1MB</span>
-        </div>
+        {entry?.touch && <TouchControls layout={entry.touch} slot="actions" />}
       </div>
       {over && (
         <div className="modal-bd">

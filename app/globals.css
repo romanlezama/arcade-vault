@@ -733,6 +733,130 @@ a { color: inherit; text-decoration: none; }
   .skin-picker button, .skin-picker button::before { transition: none; }
 }
 
+/* ===== Mando táctil (SPEC 09) =====
+   Direcciones: teclas de cruceta con la esquina recortada de .btn, en cian.
+   Acciones: botones redondos de recreativa (aro + capuchón), amarillo y magenta,
+   con la etiqueta impresa debajo. Pulsado: el capuchón se hunde y se ilumina. */
+.touch-pad {
+  display: none; gap: 10px; align-items: flex-start;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.touch-pad--cross {
+  grid-template-columns: repeat(3, 60px);
+  grid-template-rows: repeat(3, 60px);
+  grid-template-areas: ". up ." "left . right" ". down .";
+  gap: 4px;
+}
+.touch-pad--cross [data-code="ArrowUp"] { grid-area: up; }
+.touch-pad--cross [data-code="ArrowLeft"] { grid-area: left; }
+.touch-pad--cross [data-code="ArrowRight"] { grid-area: right; }
+.touch-pad--cross [data-code="ArrowDown"] { grid-area: down; }
+.touch-pad--actions { gap: 18px; }
+
+.touch-btn {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  background: transparent; border: 0; padding: 0; margin: 0; color: var(--ink);
+  cursor: pointer;
+}
+
+/* Tecla de dirección */
+.touch-btn--direction {
+  width: 60px; height: 60px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 22px; line-height: 1;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  background: rgba(0, 245, 255, 0.04);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: background-color 80ms, box-shadow 80ms, transform 80ms;
+}
+.touch-btn--direction[data-pressed] {
+  background: rgba(0, 245, 255, 0.22);
+  box-shadow: inset 0 0 14px rgba(0, 245, 255, 0.55);
+  color: var(--ink);
+  transform: translateY(1px);
+}
+
+/* Botón de acción: aro + capuchón + etiqueta */
+.touch-btn--action {
+  --ring: var(--yellow);
+  --glow: rgba(245, 255, 0, 0.55);
+  display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.touch-btn--action:nth-child(2) { --ring: var(--magenta); --glow: rgba(255, 0, 110, 0.55); }
+.touch-btn__cap {
+  position: relative;
+  width: 68px; height: 68px; border-radius: 50%;
+  border: 2px solid var(--ring);
+  background: var(--bg-3);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6), inset 0 0 0 6px var(--bg-2);
+  transition: transform 80ms, box-shadow 80ms, background-color 80ms;
+}
+.touch-btn__cap::after {
+  content: ""; position: absolute; inset: 14px; border-radius: 50%;
+  border: 1px solid var(--ring); opacity: 0.45;
+}
+.touch-btn__label {
+  font-family: var(--pixel); font-size: 8px; letter-spacing: 0.14em;
+  color: var(--ink-dim);
+}
+.touch-btn--action[data-pressed] .touch-btn__cap {
+  background: var(--ring);
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.6), 0 0 18px var(--glow), inset 0 0 0 6px var(--bg-2);
+}
+.touch-btn--action[data-pressed] .touch-btn__label { color: var(--ring); }
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-btn--direction, .touch-btn__cap { transition: none; }
+}
+
+/* Visibilidad y maquetación vertical: solo con puntero táctil. En escritorio el
+   mando no se ve y .play-stage no cambia nada. */
+.crt-screen { touch-action: manipulation; }
+@media (pointer: coarse) {
+  .touch-pad { display: flex; }
+  .touch-pad--cross { display: grid; }
+  .play-stage.has-touch {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "crt crt" "dirs acts";
+    row-gap: 20px; column-gap: 12px;
+    align-items: center;
+  }
+  .play-stage.has-touch > .crt { grid-area: crt; }
+  .play-stage.has-touch > .touch-pad--directions { grid-area: dirs; justify-self: start; }
+  .play-stage.has-touch > .touch-pad--actions { grid-area: acts; justify-self: end; }
+}
+
+/* Horizontal táctil (SPEC 09), solo en el reproductor: sin cabecera ni pie,
+   HUD en una línea y el CRT ocupando el alto restante con el mando a los lados.
+   --stage-chrome = alto del HUD compacto + márgenes + marco y pie del CRT. */
+@media (pointer: coarse) and (orientation: landscape) {
+  body:has(.av-player) .av-nav,
+  body:has(.av-player) .av-footer { display: none; }
+  .av-player { --stage-chrome: 112px; max-width: none; margin: 0 auto; padding: 6px 12px 0; }
+  .player-hud { flex-wrap: nowrap; gap: 10px; padding: 4px 10px; margin-bottom: 8px; }
+  .player-hud > div:first-child { gap: 14px !important; flex-wrap: nowrap !important; }
+  .player-hud .hud-stat { gap: 2px; }
+  .player-hud .hud-stat .l { font-size: 8px; }
+  .player-hud .hud-stat .v { font-size: 11px; }
+  .player-hud .hud-actions { flex-wrap: nowrap; gap: 6px; }
+  .player-hud .hud-actions .btn { padding: 7px 10px; font-size: 8px; }
+  .player-hud .skin-picker button { padding: 6px 7px; font-size: 7px; gap: 5px; }
+  .play-stage .crt { padding: 10px; border-radius: 18px; justify-self: center; }
+  .play-stage .crt-screen { height: calc(100dvh - var(--stage-chrome)); width: auto; margin: 0 auto; }
+  .play-stage .crt-bottom { margin-top: 6px; font-size: 6px; }
+  .play-stage.has-touch {
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: "dirs crt acts";
+    column-gap: 12px; row-gap: 0;
+  }
+  .play-stage.has-touch > .touch-pad--directions { justify-self: center; }
+  .play-stage.has-touch > .touch-pad--actions { justify-self: center; flex-direction: column; gap: 10px; }
+}
+
 .crt {
   position: relative;
   border-radius: 28px;
