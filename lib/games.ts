@@ -10,7 +10,8 @@ export type CoverClass =
   | "cover-rana"
   | "cover-duelo"
   | "cover-asteroides"
-  | "cover-apila";
+  | "cover-apila"
+  | "cover-vibora";
 
 export type Game = {
   /** Slug usado en la URL: "bloque-buster" */
@@ -141,6 +142,17 @@ export const GAMES: Game[] = [
     color: "yellow",
     best: 96300,
     plays: "0.8K",
+  },
+  {
+    id: "vibora",
+    title: "VÍBORA",
+    short: "Devora frutas neón y caza la dorada antes de que se apague.",
+    long: "Una víbora de luz recorre un tablero amurallado en busca de manzanas, cerezas, uvas y limones. Cada bocado la alarga, y cada cinco frutas acelera su paso. A veces brota una fruta dorada que vale cinco veces más, pero solo dura cinco segundos. Tienes tres vidas: chocar contra el muro o contra tu propia cola te cuesta una.",
+    cat: "ARCADE",
+    cover: "cover-vibora",
+    color: "magenta",
+    best: 4280,
+    plays: "0.5K",
   },
 ];
 

@@ -1,6 +1,6 @@
 # SPEC 07 — Juego VÍBORA: serpiente original con frutas neón
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 04, SPEC 05, SPEC 06
 > **Fecha:** 2026-11-21
 > **Objetivo:** Añadir la ficha VÍBORA y ejecutar en `/juegos/vibora/jugar` un juego de serpiente original, escrito en TypeScript dentro del CRT y registrado en `GAME_REGISTRY`, que notifica a React la puntuación, las vidas, el nivel y el estado, y guarda en el leaderboard real.
