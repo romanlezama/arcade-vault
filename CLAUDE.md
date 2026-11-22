@@ -97,3 +97,8 @@ No test framework is configured yet. Verify UI changes in the browser (Playwrigh
   - Genera `specs/game-jam/<game-id>/00-concepto.md` (pitch, bucle, controles, boceto, estética, preguntas abiertas) y `01-juego-<game-id>.md` (spec completa con el formato de SPEC 06/07), ambos en Borrador.
   - Decide de forma autónoma y deja las dudas en "Preguntas abiertas" del concepto.
   - Solo escribe en `specs/game-jam/<game-id>/`. Tras revisarla, la spec se mueve a `specs/NN-juego-<id>.md`, se aprueba y se implementa con `/spec-impl`.
+- **`skin-designer`** (`.claude/agents/skin-designer.md`): da a un juego real sus skins mínimas `clasico` (default), `neon` y `retro`, legibles sobre fondo oscuro.
+  - Trabaja sobre **un solo juego por invocación**, el que indique el usuario (`@skin-designer <id>`); sin id válido no escribe nada y lista los juegos con su estado.
+  - Audita la paleta del motor, valida contraste WCAG (texto ≥ 4,5:1, elementos de juego ≥ 3:1) y escribe `specs/NN-skins-<id>.md` en Borrador; la primera spec define el contrato de skins (`games/skins.ts`, `setSkin`, selector en `GamePlayer`, `av_skin`).
+  - Registra el estado de cada juego en `references/game-with-themes.md` (una fila por juego, sin duplicar).
+  - Memoria local en `.claude/agent-memory-local/skin-designer/`. Solo escribe en su spec, el registro y su memoria; no modifica código. Después se implementa con `/spec-impl`.
