@@ -2,6 +2,7 @@
 // Port a TypeScript de references/started-games/02-asteroids/game.js.
 // Sin React ni globales: todo el estado vive en el closure de createAsteroidesEngine,
 // y este módulo no toca window/document al importarse.
+import { DEFAULT_SKIN, type SkinId } from "../skins";
 const W = 800;
 const H = 600;
 // ── Utils ─────────────────────────────────────────────────────────────────────
@@ -32,21 +33,107 @@ const START_LIVES = 3;
 const DEAD_TIME = 2;
 const SAFE_DIST = 130;
 const MAX_DT = 0.05;
-
-// ── Paleta neón (mismos valores que los tokens de app/globals.css) ────────────
-const CYAN = "#00f5ff"; // --cyan: nave e iconos de vidas
-const MAGENTA = "#ff006e"; // --magenta: asteroides y partículas
-const MAGENTA_RGB = "255, 0, 110";
-const YELLOW = "#f5ff00"; // --yellow: balas
-const GREEN = "#00ff88"; // --green: power-up 3x y su contador
-const INK = "#e6e9ff"; // --ink: textos del HUD y overlays
-const INK_RGB = "230, 233, 255";
-const FLAME = "rgba(255, 130, 0, 0.85)"; // llama del propulsor, como la referencia
-
-/** Glow neón con shadowBlur. Cada draw fija el suyo, así no se arrastra entre elementos. */
-function glow(ctx: CanvasRenderingContext2D, color: string, blur: number) {
+// ── Skins (SPEC 08) ───────────────────────────────────────────────────────────
+export type AsteroidesPalette = {
+  bg: string; // fondo del canvas
+  ship: string; // trazo de la nave
+  flame: string; // llama del propulsor
+  asteroid: string; // trazo de los asteroides
+  particle: string; // chispas de explosión (alfa por vida)
+  bullet: string; // balas
+  powerUp: string; // rombo 3x y su texto
+  life: string; // iconos de vida del HUD
+  hudLabel: string; // "SCORE", "NIVEL"
+  hudValue: string; // número de puntos y de nivel
+  hudPowerUp: string; // contador "3x  n.ns"
+  overlayTitle: string; // "ASTEROIDES"
+  overlaySub: string; // "PULSA ESPACIO…", "PUNTAJE: …"
+  gameOver: string; // título "GAME OVER"
+  glow: number; // multiplicador de shadowBlur (0 = sin glow)
+};
+export const SKINS: Record<SkinId, AsteroidesPalette> = {
+  // Vector arcade original: blanco y gris, sin glow.
+  clasico: {
+    bg: "#000000",
+    ship: "#ffffff",
+    flame: "#ff8c1a",
+    asteroid: "#8c8c8c",
+    particle: "#8c8c8c",
+    bullet: "#ffffff",
+    powerUp: "#66ff66",
+    life: "#ffffff",
+    hudLabel: "#9a9a9a",
+    hudValue: "#ffffff",
+    hudPowerUp: "#66ff66",
+    overlayTitle: "#ffffff",
+    overlaySub: "#b3b3b3",
+    gameOver: "#ff4040",
+    glow: 0,
+  },
+  // Paleta del vault (tokens de app/globals.css): el aspecto previo a SPEC 08.
+  neon: {
+    bg: "#000000",
+    ship: "#00f5ff", // --cyan
+    flame: "#d96e00", // rgba(255,130,0,0.85) sobre negro
+    asteroid: "#ff006e", // --magenta
+    particle: "#ff006e", // --magenta
+    bullet: "#f5ff00", // --yellow
+    powerUp: "#00ff88", // --green
+    life: "#00f5ff", // --cyan
+    hudLabel: "#e6e9ff", // --ink
+    hudValue: "#e6e9ff", // --ink
+    hudPowerUp: "#00ff88", // --green
+    overlayTitle: "#e6e9ff", // --ink
+    overlaySub: "#9697a6", // rgba(--ink, 0.65) sobre negro
+    gameOver: "#e6e9ff", // --ink
+    glow: 1,
+  },
+  // Fósforo ámbar monocromo: jerarquía por luminancia, glow suave.
+  retro: {
+    bg: "#0a0700",
+    ship: "#ffd27a",
+    flame: "#ff8a00",
+    asteroid: "#b87a00",
+    particle: "#8f5f00",
+    bullet: "#fff4d6",
+    powerUp: "#ffe9b0",
+    life: "#ffd27a",
+    hudLabel: "#c98f2e",
+    hudValue: "#ffc24d",
+    hudPowerUp: "#ffe9b0",
+    overlayTitle: "#ffb000",
+    overlaySub: "#c98f2e",
+    gameOver: "#ff7a1a",
+    glow: 0.35,
+  },
+};
+// shadowBlur base de cada elemento (valores previos a SPEC 08), × palette.glow.
+const BLUR_SHIP = 12;
+const BLUR_FLAME = 8;
+const BLUR_ASTEROID = 10;
+const BLUR_PARTICLE = 6;
+const BLUR_BULLET = 8;
+const BLUR_POWERUP = 12;
+const BLUR_POWERUP_TEXT = 8;
+const BLUR_LIFE = 8;
+const BLUR_HUD = 4;
+const BLUR_HUD_POWERUP = 8;
+const BLUR_TITLE = 14;
+const BLUR_SUB = 4;
+/** "#rrggbb" + alfa → "rgba(r, g, b, a)" (partículas que se desvanecen). */
+function rgba(hex: string, alpha: number) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha.toFixed(2)})`;
+}
+/** Glow con shadowBlur. Cada draw fija el suyo, así no se arrastra entre elementos. */
+function glow(
+  ctx: CanvasRenderingContext2D,
+  palette: AsteroidesPalette,
+  color: string,
+  blur: number,
+) {
   ctx.shadowColor = color;
-  ctx.shadowBlur = blur;
+  ctx.shadowBlur = blur * palette.glow;
 }
 type Keys = Record<string, boolean>;
 // ── Bullet ────────────────────────────────────────────────────────────────────
@@ -70,9 +157,9 @@ class Bullet {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D) {
-    glow(ctx, YELLOW, 8);
-    ctx.fillStyle = YELLOW;
+  draw(ctx: CanvasRenderingContext2D, palette: AsteroidesPalette) {
+    glow(ctx, palette, palette.bullet, BLUR_BULLET);
+    ctx.fillStyle = palette.bullet;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -121,12 +208,12 @@ class Asteroid {
       new Asteroid(this.x, this.y, this.size - 1),
     ];
   }
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, palette: AsteroidesPalette) {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    glow(ctx, MAGENTA, 10);
-    ctx.strokeStyle = MAGENTA;
+    glow(ctx, palette, palette.asteroid, BLUR_ASTEROID);
+    ctx.strokeStyle = palette.asteroid;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -161,20 +248,20 @@ class PowerUp {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D, now: number) {
+  draw(ctx: CanvasRenderingContext2D, palette: AsteroidesPalette, now: number) {
     if (this.ttl < 2 && Math.floor(this.ttl * 8) % 2 === 0) return;
     const pulse = 0.85 + Math.sin(now / 150) * 0.15;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(Math.PI / 4);
-    glow(ctx, GREEN, 12);
-    ctx.strokeStyle = GREEN;
+    glow(ctx, palette, palette.powerUp, BLUR_POWERUP);
+    ctx.strokeStyle = palette.powerUp;
     ctx.lineWidth = 2;
     const r = this.radius * pulse;
     ctx.strokeRect(-r, -r, r * 2, r * 2);
     ctx.restore();
-    glow(ctx, GREEN, 8);
-    ctx.fillStyle = GREEN;
+    glow(ctx, palette, palette.powerUp, BLUR_POWERUP_TEXT);
+    ctx.fillStyle = palette.powerUp;
     ctx.font = "bold 12px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -236,7 +323,11 @@ class Ship {
     }
     return [new Bullet(ox, oy, this.angle)];
   }
-  draw(ctx: CanvasRenderingContext2D, blink = true) {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    palette: AsteroidesPalette,
+    blink = true,
+  ) {
     if (this.dead) return;
     // Parpadeo durante la invencibilidad de reaparición (no en "ready", donde el tiempo no corre)
     if (
@@ -248,8 +339,8 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    glow(ctx, CYAN, 12);
-    ctx.strokeStyle = CYAN;
+    glow(ctx, palette, palette.ship, BLUR_SHIP);
+    ctx.strokeStyle = palette.ship;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     // Silueta clásica: triángulo con muesca trasera
@@ -266,8 +357,8 @@ class Ship {
       ctx.moveTo(-8, -4);
       ctx.lineTo(-8 - rand(6, 14), 0);
       ctx.lineTo(-8, 4);
-      glow(ctx, FLAME, 8);
-      ctx.strokeStyle = FLAME;
+      glow(ctx, palette, palette.flame, BLUR_FLAME);
+      ctx.strokeStyle = palette.flame;
       ctx.stroke();
     }
     ctx.restore();
@@ -298,10 +389,10 @@ class Particle {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, palette: AsteroidesPalette) {
     const alpha = this.ttl / this.life;
-    glow(ctx, MAGENTA, 6);
-    ctx.strokeStyle = `rgba(${MAGENTA_RGB}, ${alpha.toFixed(2)})`;
+    glow(ctx, palette, palette.particle, BLUR_PARTICLE);
+    ctx.strokeStyle = rgba(palette.particle, alpha);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
@@ -311,7 +402,6 @@ class Particle {
 }
 // ── Motor ─────────────────────────────────────────────────────────────────────
 export type AsteroidesStatus = "ready" | "playing" | "dead" | "gameover";
-
 export type AsteroidesSnapshot = {
   status: AsteroidesStatus;
   paused: boolean;
@@ -319,14 +409,14 @@ export type AsteroidesSnapshot = {
   lives: number; // 3 al empezar; 0 en gameover
   level: number; // 1 al empezar
 };
-
 export type AsteroidesEngine = {
   pause(): void; // solo tiene efecto en playing/dead
   resume(): void;
   reset(): void; // vuelve a ready con score 0, 3 vidas, nivel 1
+  setSkin(id: SkinId): void; // cambia la paleta sin tocar la partida (SPEC 08)
   destroy(): void; // cancela rAF y retira listeners de window/document
 };
-
+export type AsteroidesEngineOptions = { skin?: SkinId };
 /** Teclas cuyo comportamiento por defecto (scroll, etc.) se bloquea. */
 const PREVENT_CODES = new Set([
   "ArrowLeft",
@@ -336,7 +426,6 @@ const PREVENT_CODES = new Set([
   "KeyP",
   "Escape",
 ]);
-
 /** Eventos de campos de texto (p. ej. las iniciales del modal) no son del juego. */
 function isTextTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
@@ -346,15 +435,16 @@ function isTextTarget(target: EventTarget | null) {
     target.isContentEditable
   );
 }
-
 export function createAsteroidesEngine(
   canvas: HTMLCanvasElement,
   onChange: (snapshot: AsteroidesSnapshot) => void,
+  options: AsteroidesEngineOptions = {},
 ): AsteroidesEngine {
   const maybeCtx = canvas.getContext("2d");
   if (!maybeCtx) throw new Error("ASTEROIDES: canvas 2D no disponible");
   const ctx: CanvasRenderingContext2D = maybeCtx;
-
+  // Paleta activa; setSkin la sustituye en caliente.
+  let palette: AsteroidesPalette = SKINS[options.skin ?? DEFAULT_SKIN];
   // ── Estado del juego ────────────────────────────────────────────────────────
   let ship = new Ship();
   let bullets: Bullet[] = [];
@@ -369,10 +459,8 @@ export function createAsteroidesEngine(
   let deadTimer = 0;
   let powerUpSpawned = false;
   let killsSinceSpawn = 0;
-
   // ── Notificación a React (solo cuando cambia algo) ──────────────────────────
   let lastSnapshot: AsteroidesSnapshot | null = null;
-
   function emit() {
     const prev = lastSnapshot;
     if (
@@ -387,47 +475,38 @@ export function createAsteroidesEngine(
     lastSnapshot = { status, paused, score, lives, level };
     onChange(lastSnapshot);
   }
-
   // ── Input ───────────────────────────────────────────────────────────────────
   const keys: Keys = {};
   const justPressed: Keys = {};
-
   function clearInput() {
     for (const k of Object.keys(keys)) delete keys[k];
     for (const k of Object.keys(justPressed)) delete justPressed[k];
   }
-
   function pressed(code: string) {
     const val = justPressed[code];
     justPressed[code] = false;
     return val;
   }
-
   function onKeyDown(e: KeyboardEvent) {
     if (isTextTarget(e.target)) return;
     if (PREVENT_CODES.has(e.code)) e.preventDefault();
-
     if ((e.code === "KeyP" || e.code === "Escape") && !e.repeat) {
       if (paused) resume();
       else pause();
       return;
     }
-
     if (!keys[e.code]) justPressed[e.code] = true;
     keys[e.code] = true;
   }
-
   function onKeyUp(e: KeyboardEvent) {
     // Siempre se suelta la tecla, para que ninguna quede "pegada".
     keys[e.code] = false;
     if (isTextTarget(e.target)) return;
     if (PREVENT_CODES.has(e.code)) e.preventDefault();
   }
-
   function onVisibilityChange() {
     if (document.hidden) pause();
   }
-
   // ── Ciclo de partida ────────────────────────────────────────────────────────
   function setupGame(next: AsteroidesStatus) {
     ship = new Ship();
@@ -444,7 +523,6 @@ export function createAsteroidesEngine(
     status = next;
     spawnAsteroids(3 + level);
   }
-
   function spawnAsteroids(count: number) {
     for (let i = 0; i < count; i++) {
       let x: number;
@@ -456,7 +534,6 @@ export function createAsteroidesEngine(
       asteroids.push(new Asteroid(x, y, 3));
     }
   }
-
   function nextLevel() {
     level++;
     bullets = [];
@@ -467,11 +544,9 @@ export function createAsteroidesEngine(
     ship.reset();
     spawnAsteroids(3 + level);
   }
-
   function explode(x: number, y: number, count = 8) {
     for (let i = 0; i < count; i++) particles.push(new Particle(x, y));
   }
-
   function killShip() {
     explode(ship.x, ship.y, 14);
     ship.dead = true;
@@ -483,12 +558,10 @@ export function createAsteroidesEngine(
       deadTimer = DEAD_TIME;
     }
   }
-
   function updateParticles(dt: number) {
     particles.forEach((p) => p.update(dt));
     particles = particles.filter((p) => !p.dead);
   }
-
   // ── Update ──────────────────────────────────────────────────────────────────
   function update(dt: number) {
     if (status === "ready") {
@@ -496,13 +569,11 @@ export function createAsteroidesEngine(
       if (pressed("Space")) status = "playing";
       return;
     }
-
     if (status === "gameover") {
       if (pressed("Space")) setupGame("playing");
       updateParticles(dt);
       return;
     }
-
     if (status === "dead") {
       deadTimer -= dt;
       updateParticles(dt);
@@ -513,26 +584,21 @@ export function createAsteroidesEngine(
       }
       return;
     }
-
     // Disparar
     if (pressed("Space")) bullets.push(...ship.tryShoot());
-
     ship.update(dt, keys);
     bullets.forEach((b) => b.update(dt));
     asteroids.forEach((a) => a.update(dt));
     powerUps.forEach((p) => p.update(dt));
     updateParticles(dt);
-
     bullets = bullets.filter((b) => !b.dead);
     powerUps = powerUps.filter((p) => !p.dead);
-
     for (const p of powerUps) {
       if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
         p.dead = true;
         ship.tripleShot = POWERUP_DURATION;
       }
     }
-
     // Bala vs asteroide
     const newAsteroids: Asteroid[] = [];
     for (const b of bullets) {
@@ -556,7 +622,6 @@ export function createAsteroidesEngine(
     }
     asteroids = asteroids.filter((a) => !a.dead).concat(newAsteroids);
     bullets = bullets.filter((b) => !b.dead);
-
     // Nave vs asteroide
     if (ship.invincible <= 0) {
       for (const a of asteroids) {
@@ -566,18 +631,16 @@ export function createAsteroidesEngine(
         }
       }
     }
-
     // Nivel completado
     if (asteroids.length === 0) nextLevel();
   }
-
   // ── Draw ────────────────────────────────────────────────────────────────────
   function drawLifeIcon(x: number, y: number) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-Math.PI / 2);
-    glow(ctx, CYAN, 8);
-    ctx.strokeStyle = CYAN;
+    glow(ctx, palette, palette.life, BLUR_LIFE);
+    ctx.strokeStyle = palette.life;
     ctx.lineWidth = 1.2;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -589,69 +652,72 @@ export function createAsteroidesEngine(
     ctx.stroke();
     ctx.restore();
   }
-
+  /** Texto "label valor" en dos colores, alineado a la izquierda desde x. */
+  function drawLabelValue(label: string, value: string, x: number, y: number) {
+    ctx.textAlign = "left";
+    glow(ctx, palette, palette.hudLabel, BLUR_HUD);
+    ctx.fillStyle = palette.hudLabel;
+    ctx.fillText(label, x, y);
+    glow(ctx, palette, palette.hudValue, BLUR_HUD);
+    ctx.fillStyle = palette.hudValue;
+    ctx.fillText(value, x + ctx.measureText(label).width, y);
+  }
   function drawHUD() {
-    glow(ctx, INK, 4);
-    ctx.fillStyle = INK;
     ctx.font = "15px monospace";
     ctx.textBaseline = "alphabetic";
-
-    ctx.textAlign = "left";
-    ctx.fillText(`SCORE  ${score}`, 14, 26);
-
-    ctx.textAlign = "center";
-    ctx.fillText(`NIVEL ${level}`, W / 2, 26);
-
+    drawLabelValue("SCORE  ", `${score}`, 14, 26);
+    // "NIVEL n" centrado en W/2, como antes de SPEC 08.
+    const levelLabel = "NIVEL ";
+    const levelValue = `${level}`;
+    const levelWidth = ctx.measureText(levelLabel + levelValue).width;
+    drawLabelValue(levelLabel, levelValue, W / 2 - levelWidth / 2, 26);
     for (let i = 0; i < lives; i++) drawLifeIcon(W - 16 - i * 22, 18);
-
     if (ship.tripleShot > 0) {
       ctx.textAlign = "left";
-      glow(ctx, GREEN, 8);
-      ctx.fillStyle = GREEN;
+      glow(ctx, palette, palette.hudPowerUp, BLUR_HUD_POWERUP);
+      ctx.fillStyle = palette.hudPowerUp;
       ctx.fillText(`3x  ${ship.tripleShot.toFixed(1)}s`, 14, 46);
     }
   }
-
-  function drawOverlay(title: string, sub: string) {
+  function drawOverlay(title: string, titleColor: string, sub: string) {
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    glow(ctx, INK, 14);
-    ctx.fillStyle = INK;
+    glow(ctx, palette, titleColor, BLUR_TITLE);
+    ctx.fillStyle = titleColor;
     ctx.font = "bold 46px monospace";
     ctx.fillText(title, W / 2, H / 2 - 18);
     ctx.font = "18px monospace";
-    glow(ctx, INK, 4);
-    ctx.fillStyle = `rgba(${INK_RGB}, 0.65)`;
+    glow(ctx, palette, palette.overlaySub, BLUR_SUB);
+    ctx.fillStyle = palette.overlaySub;
     ctx.fillText(sub, W / 2, H / 2 + 22);
   }
-
   function draw(now: number) {
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "#000";
+    glow(ctx, palette, palette.bg, 0); // el fondo nunca lleva glow
+    ctx.fillStyle = palette.bg;
     ctx.fillRect(0, 0, W, H);
-
-    particles.forEach((p) => p.draw(ctx));
-    asteroids.forEach((a) => a.draw(ctx));
-    powerUps.forEach((p) => p.draw(ctx, now));
-    bullets.forEach((b) => b.draw(ctx));
-    ship.draw(ctx, status !== "ready");
-
+    particles.forEach((p) => p.draw(ctx, palette));
+    asteroids.forEach((a) => a.draw(ctx, palette));
+    powerUps.forEach((p) => p.draw(ctx, palette, now));
+    bullets.forEach((b) => b.draw(ctx, palette));
+    ship.draw(ctx, palette, status !== "ready");
     drawHUD();
-
     if (status === "ready")
-      drawOverlay("ASTEROIDES", "PULSA ESPACIO PARA EMPEZAR");
+      drawOverlay(
+        "ASTEROIDES",
+        palette.overlayTitle,
+        "PULSA ESPACIO PARA EMPEZAR",
+      );
     else if (status === "gameover")
       drawOverlay(
         "GAME OVER",
+        palette.gameOver,
         `PUNTAJE: ${score}   —   ESPACIO PARA REINICIAR`,
       );
   }
-
   // ── Loop principal ──────────────────────────────────────────────────────────
   let lastTime: number | null = null;
   let rafId = 0;
   let destroyed = false;
-
   function loop(ts: number) {
     if (destroyed) return;
     if (paused) {
@@ -667,14 +733,12 @@ export function createAsteroidesEngine(
     emit();
     rafId = requestAnimationFrame(loop);
   }
-
   // ── API pública ─────────────────────────────────────────────────────────────
   function pause() {
     if (paused || (status !== "playing" && status !== "dead")) return;
     paused = true;
     emit();
   }
-
   function resume() {
     if (!paused) return;
     paused = false;
@@ -682,7 +746,6 @@ export function createAsteroidesEngine(
     clearInput();
     emit();
   }
-
   function reset() {
     setupGame("ready");
     paused = false;
@@ -691,7 +754,12 @@ export function createAsteroidesEngine(
     draw(performance.now());
     emit();
   }
-
+  function setSkin(id: SkinId) {
+    palette = SKINS[id];
+    // En pausa el loop no redibuja: pintamos el frame actual con la nueva paleta.
+    // No toca el estado de la partida ni emite snapshot.
+    if (paused) draw(performance.now());
+  }
   function destroy() {
     destroyed = true;
     cancelAnimationFrame(rafId);
@@ -699,15 +767,12 @@ export function createAsteroidesEngine(
     window.removeEventListener("keyup", onKeyUp);
     document.removeEventListener("visibilitychange", onVisibilityChange);
   }
-
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   document.addEventListener("visibilitychange", onVisibilityChange);
-
   setupGame("ready");
   draw(performance.now());
   emit(); // snapshot inicial: ready, 0, 3, 1, paused: false
   rafId = requestAnimationFrame(loop);
-
-  return { pause, resume, reset, destroy };
+  return { pause, resume, reset, setSkin, destroy };
 }
